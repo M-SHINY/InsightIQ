@@ -372,7 +372,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dbBadge = document.getElementById("db-status-badge");
                 const aiBadge = document.getElementById("ai-mode-badge");
 
-                dbBadge.innerHTML = `<span class="dot"></span> Database: ${data.database.total_records} Records (${data.database.valid_completed_records} Valid)`;
+                dbBadge.textContent = "";
+                const dotSpan = document.createElement("span");
+                dotSpan.className = "dot";
+                dbBadge.appendChild(dotSpan);
+                dbBadge.appendChild(document.createTextNode(
+                    ` Database: ${data.database.total_records} Records (${data.database.valid_completed_records} Valid)`
+                ));
 
                 if (data.interpreter.llm_configured) {
                     aiBadge.className = "badge badge-success";
@@ -402,15 +408,32 @@ document.addEventListener("DOMContentLoaded", () => {
             data.history.forEach(item => {
                 const div = document.createElement("div");
                 div.className = "history-item";
-                div.innerHTML = `
-                    <div class="history-item-left">
-                        <span class="history-time">${item.timestamp}</span>
-                        <span class="history-question"><strong>${item.question}</strong></span>
-                    </div>
-                    <div>
-                        <span class="history-metric">${item.primary_metric}</span>
-                    </div>
-                `;
+
+                const leftDiv = document.createElement("div");
+                leftDiv.className = "history-item-left";
+
+                const timeSpan = document.createElement("span");
+                timeSpan.className = "history-time";
+                timeSpan.textContent = item.timestamp || "";
+
+                const questionSpan = document.createElement("span");
+                questionSpan.className = "history-question";
+                const questionStrong = document.createElement("strong");
+                questionStrong.textContent = item.question || "";
+                questionSpan.appendChild(questionStrong);
+
+                leftDiv.appendChild(timeSpan);
+                leftDiv.appendChild(questionSpan);
+
+                const rightDiv = document.createElement("div");
+                const metricSpan = document.createElement("span");
+                metricSpan.className = "history-metric";
+                metricSpan.textContent = item.primary_metric || "";
+                rightDiv.appendChild(metricSpan);
+
+                div.appendChild(leftDiv);
+                div.appendChild(rightDiv);
+
                 div.addEventListener("click", () => {
                     queryInput.value = item.question;
                     submitQuery(item.question);
@@ -431,23 +454,56 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("modal-valid-records").textContent = dq.valid_completed_records;
             document.getElementById("modal-excluded-records").textContent = dq.excluded_records;
             document.getElementById("modal-integrity-score").textContent = `${dq.integrity_score}%`;
-            document.getElementById("modal-policy-text").innerHTML = `
-                <strong>Net Completed Revenue Policy:</strong><br>
-                ${dq.revenue_policy}<br><br>
-                <strong>Exclusion Policy:</strong> Returned orders are excluded from net completed revenue. Rows missing unit prices are excluded rather than fabricated. Zero-quantity rows are retained with zero contribution.
-            `;
+
+            const policyEl = document.getElementById("modal-policy-text");
+            policyEl.textContent = "";
+
+            const titleStrong = document.createElement("strong");
+            titleStrong.textContent = "Net Completed Revenue Policy:";
+            policyEl.appendChild(titleStrong);
+            policyEl.appendChild(document.createElement("br"));
+
+            const policySpan = document.createElement("span");
+            policySpan.textContent = dq.revenue_policy || "";
+            policyEl.appendChild(policySpan);
+            policyEl.appendChild(document.createElement("br"));
+            policyEl.appendChild(document.createElement("br"));
+
+            const exclusionStrong = document.createElement("strong");
+            exclusionStrong.textContent = "Exclusion Policy:";
+            policyEl.appendChild(exclusionStrong);
+
+            const exclusionText = document.createTextNode(
+                " Returned orders are excluded from net completed revenue. Rows missing unit prices are excluded rather than fabricated. Zero-quantity rows are retained with zero contribution."
+            );
+            policyEl.appendChild(exclusionText);
 
             const tbody = document.getElementById("modal-issues-tbody");
-            tbody.innerHTML = "";
+            tbody.textContent = "";
             dq.issues.forEach(issue => {
                 const tr = document.createElement("tr");
-                const sevClass = issue.severity === "EXCLUSION" ? "badge badge-warning" : "badge badge-info";
-                tr.innerHTML = `
-                    <td><strong>${issue.transaction_id}</strong></td>
-                    <td>${issue.issue_type}</td>
-                    <td><span class="${sevClass}">${issue.severity}</span></td>
-                    <td>${issue.description}</td>
-                `;
+
+                const tdTxn = document.createElement("td");
+                const strongTxn = document.createElement("strong");
+                strongTxn.textContent = issue.transaction_id || "";
+                tdTxn.appendChild(strongTxn);
+
+                const tdType = document.createElement("td");
+                tdType.textContent = issue.issue_type || "";
+
+                const tdSev = document.createElement("td");
+                const spanSev = document.createElement("span");
+                spanSev.className = issue.severity === "EXCLUSION" ? "badge badge-warning" : "badge badge-info";
+                spanSev.textContent = issue.severity || "";
+                tdSev.appendChild(spanSev);
+
+                const tdDesc = document.createElement("td");
+                tdDesc.textContent = issue.description || "";
+
+                tr.appendChild(tdTxn);
+                tr.appendChild(tdType);
+                tr.appendChild(tdSev);
+                tr.appendChild(tdDesc);
                 tbody.appendChild(tr);
             });
 
