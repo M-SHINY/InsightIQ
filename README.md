@@ -66,7 +66,7 @@ flowchart TD
 
 The sales dataset is the authoritative source of truth. InsightIQ enforces a strict, documented revenue policy:
 
-$$\text{Transaction Net Revenue} = (\text{Quantity} \times \text{Unit\_Price}) - \text{Discount\_Amount}$$
+**Transaction Net Revenue = (Quantity × Unit Price) − Discount Amount**
 
 > **Currency Policy Note:** The dataset does not declare an explicit currency symbol (e.g. USD, EUR, INR). To adhere to strict data fidelity standards, InsightIQ displays formatted numeric values neutrally (e.g., `1,439,200.00`) without fabricated currency symbols.
 
