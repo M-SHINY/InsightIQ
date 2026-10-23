@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightIQ — Trustworthy AI Sales Intelligence</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-logo">IQ</div>
+                <div class="brand-text">
+                    <h1>InsightIQ</h1>
+                    <span class="subtitle">Trustworthy AI Sales Intelligence</span>
+                </div>
+            </div>
+            <div class="nav-badges">
+                <div class="badge badge-success" id="db-status-badge">
+                    <span class="dot"></span> Database: 51 Records (49 Valid)
+                </div>
+                <div class="badge badge-info" id="ai-mode-badge">
+                    <span class="dot"></span> Mode: Rule-Based Fallback
+                </div>
+                <button class="btn btn-secondary btn-sm" id="open-dq-modal-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Data Quality & Policy
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Query Search Bar Section -->
+            <section class="query-section">
+                <div class="search-box-card">
+                    <form id="query-form" class="search-form">
+                        <div class="input-wrapper">
+                            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input
+                                type="text"
+                                id="query-input"
+                                placeholder="Ask a business question (e.g., 'What is the total revenue?', 'Monthly revenue trend', 'Compare Feb and May 2026')..."
+                                autocomplete="off"
+                                required
+                            />
+                            <button type="button" id="clear-query-btn" class="clear-btn" title="Clear input">&times;</button>
+                        </div>
+                        <button type="submit" id="submit-btn" class="btn btn-primary">
+                            <span>Analyze</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
+                    </form>
+
+                    <!-- Example Prompt Chips -->
+                    <div class="examples-container">
+                        <span class="examples-label">Required Challenge Questions:</span>
+                        <div class="chips-group">
+                            <button class="chip" data-query="What is the total revenue?">1. Total Revenue</button>
+                            <button class="chip" data-query="What is the highest-revenue product?">2. Highest-Revenue Product</button>
+                            <button class="chip" data-query="What is the monthly revenue trend?">3. Monthly Revenue Trend</button>
+                            <button class="chip" data-query="What is the highest-sales region?">4. Highest-Sales Region</button>
+                            <button class="chip" data-query="Compare revenue between February 2026 and May 2026">5. Compare Feb vs May 2026</button>
+                        </div>
+                    </div>
+
+                    <!-- Additional Insights -->
+                    <div class="examples-container">
+                        <span class="examples-label">Additional Insights:</span>
+                        <div class="chips-group">
+                            <button class="chip" data-query="Summarize the sales data">Sales Overview</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-container" class="results-container">
+                <!-- Initial Welcome / Empty State -->
+                <div id="empty-state" class="empty-state card">
+                    <div class="empty-icon">📊</div>
+                    <h2>Production-Minded Business Intelligence</h2>
+                    <p>InsightIQ combines hybrid AI question interpretation with deterministic, parameterized SQLite analytics.</p>
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <h4>Zero Hallucinations</h4>
+                            <p>Calculations are executed entirely in SQLite, never computed by an LLM.</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Auditable Integrity</h4>
+                            <p>Every response displays the exact executed SQL and data quality context.</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Safe Fallbacks</h4>
+                            <p>Full offline support for all required questions even without an API key.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state card hidden">
+                    <div class="spinner"></div>
+                    <p id="loading-text">Analyzing query and executing parameterized SQL...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="error-state card hidden">
+                    <div class="error-header">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <h3 id="error-title">Query Processing Error</h3>
+                    </div>
+                    <p id="error-message"></p>
+                    <div id="error-details" class="error-details"></div>
+                </div>
+
+                <!-- Success Answer Card -->
+                <div id="answer-card" class="answer-card card hidden">
+                    <!-- Header with Title & Badges -->
+                    <div class="answer-header">
+                        <div>
+                            <span class="tag tag-primary" id="operation-tag">Operation</span>
+                            <h2 id="answer-title" class="answer-title">Result Title</h2>
+                        </div>
+                        <div class="answer-metadata">
+                            <span class="meta-item" id="meta-mode">Mode: Rules</span>
+                            <span class="meta-item" id="meta-latency">Latency: 12ms</span>
+                        </div>
+                    </div>
+
+                    <!-- Highlight KPI Callout -->
+                    <div class="kpi-banner">
+                        <div class="kpi-main">
+                            <span class="kpi-label" id="kpi-label">Primary Metric</span>
+                            <span class="kpi-value" id="kpi-value">0.00</span>
+                        </div>
+                        <div class="kpi-secondary" id="kpi-secondary-wrapper">
+                            <span class="kpi-label" id="kpi-secondary-label">Additional Context</span>
+                            <span class="kpi-value-sm" id="kpi-secondary-value">N/A</span>
+                        </div>
+                    </div>
+
+                    <!-- Natural Language Summary -->
+                    <div class="summary-box">
+                        <p id="executive-summary"></p>
+                    </div>
+
+                    <!-- Warnings (if any) -->
+                    <div id="warnings-box" class="warnings-box hidden">
+                        <div class="warning-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            Data Quality & Scope Notice
+                        </div>
+                        <ul id="warnings-list"></ul>
+                    </div>
+
+                    <!-- Visual Chart & Breakdown Section -->
+                    <div class="data-display-section">
+                        <div class="chart-container" id="chart-wrapper">
+                            <canvas id="analytics-chart"></canvas>
+                        </div>
+
+                        <!-- Supporting Evidence Table -->
+                        <div class="table-container">
+                            <h4 class="section-subtitle">Supporting Data Evidence</h4>
+                            <div class="table-responsive">
+                                <table id="evidence-table" class="data-table">
+                                    <thead id="evidence-table-head"></thead>
+                                    <tbody id="evidence-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deterministic Insights Section -->
+                    <div class="insights-section">
+                        <h4 class="section-subtitle">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                            Derived Analytical Observations
+                        </h4>
+                        <ul id="insights-list" class="insights-list"></ul>
+                    </div>
+
+                    <!-- Contextual Follow-up Chips -->
+                    <div class="follow-up-section" id="follow-up-section">
+                        <span class="follow-up-label">Suggested Follow-Up Inquiries:</span>
+                        <div id="follow-up-chips" class="chips-group"></div>
+                    </div>
+
+                    <!-- SQL Transparency Accordion -->
+                    <div class="transparency-accordion">
+                        <button type="button" class="accordion-toggle" id="toggle-sql-btn">
+                            <span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                Executed SQL & Intent Verification
+                            </span>
+                            <span class="accordion-arrow" id="accordion-arrow">▼</span>
+                        </button>
+                        <div id="sql-details-panel" class="accordion-content hidden">
+                            <div class="code-block-header">
+                                <span>Parameterized SQLite Query (Read-Only)</span>
+                                <span class="badge badge-neutral" id="sql-param-badge">0 Parameters</span>
+                            </div>
+                            <pre><code id="executed-sql-code"></code></pre>
+                            <div class="intent-explanation">
+                                <strong>AI Intent Mapping:</strong>
+                                <p id="intent-explanation-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Query History Bar -->
+            <section class="history-section card">
+                <div class="history-header">
+                    <h3>Recent Session Inquiries</h3>
+                    <span id="history-count" class="badge badge-neutral">0 queries</span>
+                </div>
+                <div id="history-list" class="history-list">
+                    <p class="text-muted">No questions asked yet in this session.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>InsightIQ © 2026 — RSG Graduate Engineer Trainee Technical Submission. Built with Flask, SQLite & Deterministic AI Architecture.</p>
+        </footer>
+    </div>
+
+    <!-- Data Quality & Revenue Policy Modal -->
+    <div id="dq-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>Data Quality Audit & Revenue Policy</h2>
+                <button type="button" class="close-modal-btn" id="close-dq-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="policy-card">
+                    <h3>Official Revenue Policy</h3>
+                    <p id="modal-policy-text">
+                        <strong>Net Completed Revenue Formula:</strong><br>
+                        <code>Net Revenue = (Quantity &times; Unit_Price) - Discount_Amount</code><br>
+                        <em>Filter:</em> Only completed transactions with verified non-null unit prices are included. Returned orders and transactions with missing prices are excluded to maintain strict accounting integrity.
+                    </p>
+                </div>
+
+                <div class="audit-stats-grid">
+                    <div class="audit-stat">
+                        <span class="stat-num" id="modal-total-records">-</span>
+                        <span class="stat-lbl">Total CSV Rows</span>
+                    </div>
+                    <div class="audit-stat">
+                        <span class="stat-num text-success" id="modal-valid-records">-</span>
+                        <span class="stat-lbl">Valid Completed</span>
+                    </div>
+                    <div class="audit-stat">
+                        <span class="stat-num text-warning" id="modal-excluded-records">-</span>
+                        <span class="stat-lbl">Excluded Rows</span>
+                    </div>
+                    <div class="audit-stat">
+                        <span class="stat-num text-info" id="modal-integrity-score">-</span>
+                        <span class="stat-lbl">Integrity Score</span>
+                    </div>
+                </div>
+
+                <div class="modal-issues-section">
+                    <h3>Identified Data Quality Anomalies</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction</th>
+                                <th>Issue Type</th>
+                                <th>Severity</th>
+                                <th>Resolution Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-issues-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modal-close-action-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
